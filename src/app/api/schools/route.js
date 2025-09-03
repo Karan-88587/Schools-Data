@@ -11,7 +11,7 @@ export async function GET() {
   try {
     const pool = getPool();
     const [rows] = await pool.query(
-      "SELECT id, name, address, city, image FROM schools ORDER BY id DESC"
+      "SELECT id, name, address, city, state, contact, email_id, image FROM schools ORDER BY id DESC"
     );
     return Response.json(rows, { status: 200 });
   } catch (err) {
