@@ -1,6 +1,12 @@
 import { getPool } from "../../../../lib/db.js";
-import fs from "fs";
-import path from "path";
+import { v2 as cloudinary } from "cloudinary";
+
+// Cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // server-side validators to check user input
 const isValidIndianMobile = (value) => /^[6-9]\d{9}$/.test(String(value || "").trim());
@@ -44,19 +50,20 @@ export async function POST(req) {
       return Response.json({ error: "Invalid email address" }, { status: 400 });
     }
 
-    // Save image to /public/schoolImages
-    let imagePath = "";
-    if (file && typeof file === "object" && "arrayBuffer" in file) {
+    // Uploading images to Cloudinary
+    let imageUrl = "";
+    if (file && "arrayBuffer" in file) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const uploadsDir = path.join(process.cwd(), "public", "schoolImages");
-      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-      const safeName = `${Date.now()}-${(file.name || "image").replace(/\s+/g, "-")}`;
-      imagePath = `/schoolImages/${safeName}`;
-
-      fs.writeFileSync(path.join(process.cwd(), "public", imagePath), buffer);
+      // Upload image as base64
+      const uploadRes = await cloudinary.uploader.upload(
+        `data:${file.type};base64,${buffer.toString("base64")}`,
+        {
+          folder: "schools",
+        }
+      );
+      imageUrl = uploadRes.secure_url;
     } else {
       return Response.json({ error: "Image file is required" }, { status: 400 });
     }
@@ -65,7 +72,7 @@ export async function POST(req) {
     await pool.query(
       `INSERT INTO schools (name, address, city, state, contact, email_id, image)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, address, city, state, contact, email_id, imagePath]
+      [name, address, city, state, contact, email_id, imageUrl]
     );
 
     return Response.json({ message: "School added successfully" }, { status: 201 });

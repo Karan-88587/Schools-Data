@@ -34,6 +34,14 @@ export default function ShowSchools() {
     );
   }
 
+  if (schools.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-[80vh]">
+        <h1 className="text-2xl md:text-4xl font-bold">No schools found</h1>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-xl font-bold mb-4">Schools List</h1>
